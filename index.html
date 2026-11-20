@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Garden PRO</title>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<!-- CHART -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --green:#16804b;
+  --dark:#123b29;
+  --light:#eaf5ed;
+  --bg:#f4f8f5;
+  --white:#fff;
+  --text:#26382d;
+  --muted:#718078;
+  --border:#e4ece6;
+  --red:#d94b4b;
+  --yellow:#e5a52b;
+}
+
+* {box-sizing:border-box;margin:0;padding:0}
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+}
+
+button,input,select {font:inherit}
+
+.layout {
+  display:flex;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  width:245px;
+  background:var(--dark);
+  color:white;
+  padding:25px 17px;
+  flex-shrink:0;
+}
+
+.brand {
+  font-size:21px;
+  font-weight:bold;
+  margin:8px 10px 35px;
+}
+
+.brand span {color:#7ce6a7}
+
+.menu {
+  width:100%;
+  text-align:left;
+  background:transparent;
+  border:0;
+  color:#d5e8da;
+  padding:14px;
+  border-radius:9px;
+  margin-bottom:7px;
+  cursor:pointer;
+}
+
+.menu:hover,.menu.active {
+  background:#245d40;
+  color:white;
+}
+
+.sidebar small {
+  display:block;
+  margin:35px 10px 10px;
+  color:#a8c6b2;
+}
+
+/* MAIN */
+
+.main {
+  flex:1;
+  min-width:0;
+  padding:25px;
+}
+
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:25px;
+  flex-wrap:wrap;
+}
+
+.topbar h1 {font-size:25px}
+.topbar p {color:var(--muted);margin-top:6px;font-size:13px}
+
+.connection {
+  background:#e1f4e7;
+  color:var(--green);
+  padding:10px 14px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.connection.offline {
+  background:#fde8e8;
+  color:var(--red);
+}
+
+/* PAGES */
+
+.page {display:none}
+.page.active {display:block}
+
+.section-title {
+  margin:25px 0 15px;
+  font-size:17px;
+}
+
+/* CARDS */
+
+.cards {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:15px;
+}
+
+.card {
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:21px;
+  box-shadow:0 3px 12px #00000006;
+}
+
+.card-label {
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:15px;
+}
+
+.card-value {
+  font-size:30px;
+  font-weight:bold;
+  color:var(--dark);
+}
+
+.card-value small {
+  font-size:14px;
+  font-weight:normal;
+}
+
+.card-icon {
+  font-size:25px;
+  margin-bottom:13px;
+}
+
+/* PANELS */
+
+.panel {
+  background:white;
+  border:1px solid var(--border);
+  padding:21px;
+  border-radius:14px;
+  margin-top:17px;
+}
+
+.panel h3 {font-size:16px;margin-bottom:17px}
+
+.chart-wrap {
+  position:relative;
+  height:300px;
+}
+
+/* STATUS */
+
+.status {
+  display:inline-block;
+  padding:8px 13px;
+  border-radius:20px;
+  background:#e4f4e9;
+  color:var(--green);
+  font-size:12px;
+  font-weight:bold;
+}
+
+.status.dry {
+  background:#fff1d9;
+  color:#a86c00;
+}
+
+.status.error {
+  background:#fde7e7;
+  color:var(--red);
+}
+
+/* TABLE */
+
+.table-wrap {overflow-x:auto}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:650px;
+  font-size:13px;
+}
+
+th,td {
+  text-align:left;
+  padding:14px 12px;
+  border-bottom:1px solid var(--border);
+}
+
+th {
+  color:var(--muted);
+  background:#f8faf8;
+}
+
+.empty {
+  text-align:center;
+  padding:35px;
+  color:var(--muted);
+}
+
+/* INPUTS */
+
+.filters {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+input,select {
+  background:white;
+  border:1px solid var(--border);
+  padding:11px;
+  border-radius:8px;
+  color:var(--text);
+  min-width:130px;
+}
+
+.btn {
+  border:0;
+  padding:11px 15px;
+  background:var(--green);
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.btn:hover {opacity:.85}
+
+.btn.secondary {
+  background:#e8f3eb;
+  color:var(--green);
+}
+
+.btn:disabled {opacity:.5;cursor:not-allowed}
+
+/* GUIDE */
+
+.guide {
+  padding:19px;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:12px;
+  margin-bottom:13px;
+  line-height:1.7;
+}
+
+.guide h3 {color:var(--green);margin-bottom:9px}
+
+.guide p,.guide li {
+  font-size:14px;
+  color:#58675d;
+}
+
+.guide ol,.guide ul {padding-left:20px}
+
+/* STATISTICS */
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.stat {
+  background:#f3f8f4;
+  padding:17px;
+  border-radius:10px;
+}
+
+.stat b {
+  display:block;
+  font-size:23px;
+  margin-top:8px;
+}
+
+.note {
+  background:#fff8e7;
+  color:#785b1e;
+  padding:14px;
+  border-radius:9px;
+  line-height:1.6;
+  font-size:13px;
+  margin-top:15px;
+}
+
+footer {
+  text-align:center;
+  color:var(--muted);
+  padding:30px 0;
+  font-size:12px;
+}
+
+@media(max-width:900px) {
+  .cards {grid-template-columns:repeat(2,1fr)}
+  .sidebar {width:190px}
+}
+
+@media(max-width:600px) {
+  .layout {display:block}
+  .sidebar {
+    width:100%;
+    padding:13px;
+  }
+  .brand {margin:5px 5px 12px}
+  .menu {
+    display:inline-block;
+    width:auto;
+    padding:10px;
+    font-size:12px;
+    margin:2px;
+  }
+  .sidebar small {display:none}
+  .main {padding:15px}
+  .cards {grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .card {padding:15px}
+  .card-value {font-size:23px}
+  .stats {grid-template-columns:1fr}
+  .chart-wrap {height:240px}
+  .topbar h1 {font-size:21px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+<div class="brand">🌱 SMART <span>GARDEN</span></div>
+
+<button class="menu active" onclick="showPage('dashboard',this)">
+  🏠 Dashboard
+</button>
+
+<button class="menu" onclick="showPage('history',this)">
+  📊 Historis Sensor
+</button>
+
+<button class="menu" onclick="showPage('analysis',this)">
+  📈 Analisis Data
+</button>
+
+<button class="menu" onclick="showPage('guide',this)">
+  📖 Panduan Penggunaan
+</button>
+
+<button class="menu" onclick="showPage('about',this)">
+  ℹ️ Tentang Sistem
+</button>
+
+<small>SMART GARDEN PRO<br>ESP32 IoT Monitoring</small>
+
+</aside>
+
+<!-- MAIN -->
+
+<main class="main">
+
+<div class="topbar">
+  <div>
+    <h1 id="pageTitle">Dashboard Monitoring</h1>
+    <p>Sistem pemantauan tanaman otomatis berbasis IoT</p>
+  </div>
+
+  <div class="connection offline" id="connection">
+    ● Menunggu Firebase
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+
+<section class="page active" id="dashboard">
+
+<div class="cards">
+
+  <div class="card">
+    <div class="card-icon">🌡️</div>
+    <div class="card-label">Suhu Lingkungan</div>
+    <div class="card-value"><span id="temp">--</span> <small>°C</small></div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon">💧</div>
+    <div class="card-label">Kelembapan Tanah</div>
+    <div class="card-value"><span id="humidity">--</span> <small>%</small></div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon">🌱</div>
+    <div class="card-label">Kondisi Tanah</div>
+    <div class="card-value" style="font-size:20px"><span class="status" id="soil">--</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-icon">🚿</div>
+    <div class="card-label">Status Pompa</div>
+    <div class="card-value" style="font-size:20px" id="pump">--</div>
+  </div>
+
+</div>
+
+<h2 class="section-title">Grafik Monitoring Real-Time</h2>
+
+<div class="panel">
+  <h3>📈 Perubahan Suhu dan Kelembapan</h3>
+  <div class="chart-wrap">
+    <canvas id="liveChart"></canvas>
+  </div>
+</div>
+
+<h2 class="section-title">Informasi Perangkat</h2>
+
+<div class="panel">
+  <p>📡 Koneksi database:
+    <b id="dbStatus">Memeriksa...</b>
+  </p>
+  <br>
+  <p>🕒 Pembaruan terakhir:
+    <b id="lastUpdate">Belum ada data</b>
+  </p>
+  <br>
+  <p>🌿 Status tanaman:
+    <span class="status" id="plantStatus">Menunggu data sensor</span>
+  </p>
+</div>
+
+</section>
+
+<!-- ================= HISTORY ================= -->
+
+<section class="page" id="history">
+
+<div class="panel">
+  <h3>📚 Riwayat Data Sensor</h3>
+
+  <div class="filters">
+    <input type="text" id="search"
+      placeholder="Cari kondisi / pompa..."
+      oninput="renderHistory()">
+
+    <input type="date" id="startDate"
+      onchange="renderHistory()">
+
+    <input type="date" id="endDate"
+      onchange="renderHistory()">
+
+    <select id="filterPump" onchange="renderHistory()">
+      <option value="">Semua pompa</option>
+      <option value="ON">Pompa ON</option>
+      <option value="OFF">Pompa OFF</option>
+    </select>
+
+    <button class="btn secondary" onclick="resetFilters()">
+      Reset
+    </button>
+
+    <button class="btn" onclick="exportCSV()">
+      ↓ Export CSV
+    </button>
+  </div>
+
+  <p style="color:#718078;font-size:12px;margin-bottom:15px">
+    Menampilkan maksimal 500 catatan historis terbaru yang diterima dari Firebase.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Waktu</th>
+          <th>Suhu</th>
+          <th>Kelembapan</th>
+          <th>Kondisi Tanah</th>
+          <th>Pompa</th>
+        </tr>
+      </thead>
+      <tbody id="historyTable">
+        <tr><td colspan="6" class="empty">Menunggu data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</section>
+
+<!-- ================= ANALYSIS ================= -->
+
+<section class="page" id="analysis">
+
+<div class="cards">
+
+  <div class="card">
+    <div class="card-label">Rata-rata Suhu</div>
+    <div class="card-value"><span id="avgTemp">--</span><small> °C</small></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Rata-rata Kelembapan</div>
+    <div class="card-value"><span id="avgHumidity">--</span><small> %</small></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Total Catatan</div>
+    <div class="card-value" id="totalData">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Pompa Aktif</div>
+    <div class="card-value" id="pumpCount">0</div>
+  </div>
+
+</div>
+
+<div class="panel">
+  <h3>📊 Grafik Historis Suhu</h3>
+  <div class="chart-wrap">
+    <canvas id="tempChart"></canvas>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>💧 Grafik Historis Kelembapan</h3>
+  <div class="chart-wrap">
+    <canvas id="humidityChart"></canvas>
+  </div>
+</div>
+
+<div class="note">
+  Analisis dihitung dari catatan historis yang sudah berhasil dimuat.
+  Nilai rata-rata bukan hasil prediksi kondisi tanaman.
+</div>
+
+</section>
+
+<!-- ================= GUIDE ================= -->
+
+<section class="page" id="guide">
+
+<div class="guide">
+  <h3>1. Mengenal Smart Garden</h3>
+  <p>
+  Smart Garden adalah sistem penyiraman tanaman otomatis
+  menggunakan ESP32 dan sensor. Suhu (DS18B20) berperan sebagai
+  komponen utama untuk memantau kondisi lingkungan dan menyesuaikan
+  ambang kelembapan penyiraman bersama sensor tanah, lalu mengendalikan
+  pompa secara aman.
+  </p>
+</div>
+
+<div class="guide">
+  <h3>2. Komponen Sistem</h3>
+  <ul>
+    <li>ESP32 DevKit sebagai pengendali utama.</li>
+    <li>DS18B20 sebagai sensor suhu utama pemantau lingkungan.</li>
+    <li>Soil Moisture Sensor untuk mengukur kelembapan tanah.</li>
+    <li>Relay sebagai pengendali pompa.</li>
+    <li>Pompa air untuk penyiraman otomatis.</li>
+    <li>LCD I2C untuk menampilkan informasi lokal.</li>
+    <li>Firebase untuk menyimpan dan menyinkronkan data.</li>
+  </ul>
+</div>
+
+<div class="guide">
+  <h3>3. Cara Mengoperasikan</h3>
+  <ol>
+    <li>Pastikan rangkaian ESP32 sudah terhubung dengan benar.</li>
+    <li>Pastikan sensor dan pompa sudah terpasang.</li>
+    <li>Hubungkan ESP32 ke jaringan WiFi yang dikonfigurasi.</li>
+    <li>Pastikan ESP32 berhasil terhubung ke Firebase.</li>
+    <li>Buka website Smart Garden.</li>
+    <li>Periksa suhu dan kelembapan pada dashboard.</li>
+    <li>Amati status tanah dan pompa.</li>
+    <li>Buka menu Historis untuk melihat catatan sebelumnya.</li>
+  </ol>
+</div>
+
+<div class="guide">
+  <h3>4. Cara Membaca Dashboard</h3>
+  <ul>
+    <li>Suhu: menunjukkan pembacaan utama sensor DS18B20 dan memengaruhi batas nyala pompa saat suhu tinggi.</li>
+    <li>Kelembapan: menunjukkan nilai pembacaan sensor tanah.</li>
+    <li>Kondisi tanah: menunjukkan kategori gabungan suhu & kelembapan sesuai program ESP32.</li>
+    <li>Pompa ON: sistem melaporkan pompa aktif.</li>
+    <li>Pompa OFF: sistem melaporkan pompa tidak aktif.</li>
+  </ul>
+</div>
+
+<div class="guide">
+  <h3>5. Cara Melihat Historis</h3>
+  <ol>
+    <li>Pilih menu Historis Sensor.</li>
+    <li>Masukkan tanggal awal dan akhir.</li>
+    <li>Gunakan kolom pencarian untuk mencari status tertentu.</li>
+    <li>Pilih filter pompa jika diperlukan.</li>
+    <li>Tekan Export CSV untuk menyimpan hasil pencarian.</li>
+  </ol>
+</div>
+
+<div class="guide">
+  <h3>6. Pemecahan Masalah</h3>
+  <p><b>Data tidak muncul:</b> Periksa koneksi ESP32 dan Firebase.</p>
+  <p><b>Suhu menunjukkan --:</b> Periksa sensor DS18B20 dan data yang dikirim.</p>
+  <p><b>Kelembapan tidak terbaca:</b> Periksa kabel dan pembacaan analog.</p>
+  <p><b>Historis kosong:</b> Pastikan ESP32 sudah mengirim catatan ke path Riwayat.</p>
+  <p><b>Website tidak terhubung:</b> Periksa Firebase URL, konfigurasi aplikasi, dan aturan database.</p>
+</div>
+
+<div class="note">
+  Catatan: Website ini merupakan sistem monitoring. Pengaturan ambang
+  suhu/penyiraman dan kendali relay tetap berada pada program ESP32.
+</div>
+
+</section>
+
+<!-- ================= ABOUT ================= -->
+
+<section class="page" id="about">
+
+<div class="panel">
+  <h3>🌱 SMART GARDEN PRO</h3>
+  <p style="line-height:1.8;color:#627268">
+  Smart Garden merupakan proyek Internet of Things (IoT)
+  yang dirancang untuk membantu proses pemantauan kondisi
+  tanah dan penyiraman tanaman secara otomatis.
+  </p>
+</div>
+
+<div class="panel">
+  <h3>Arsitektur Sistem</h3>
+  <p>Sensor → ESP32 → WiFi → Firebase → Website Dashboard</p>
+</div>
+
+<div class="panel">
+  <h3>Teknologi</h3>
+  <p>Hardware: ESP32, Soil Moisture, DS18B20, Relay, Pompa.</p>
+  <br>
+  <p>Database: Firebase Realtime Database.</p>
+  <br>
+  <p>Frontend: HTML, CSS, JavaScript.</p>
+  <br>
+  <p>Visualisasi: Chart.js.</p>
+</div>
+
+</section>
+
+<footer>
+SMART GARDEN PRO © 2026<br>
+Automatic Plant Monitoring System
+</footer>
+
+</main>
+</div>
+
+<script>
+
+// =======================================
+// 1. FIREBASE CONFIGURATION
+// =======================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDIncTBaexpWi7mi858xpKCS0F_LraH78A",
+  authDomain: "smart-garden-ff0a5.firebaseapp.com",
+  databaseURL: "https://smart-garden-ff0a5-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-garden-ff0a5",
+  storageBucket: "smart-garden-ff0a5.firebasestorage.app",
+  messagingSenderId: "612826798039",
+  appId: "1:612826798039:web:b425c8ec5c123075715d92",
+  measurementId: "G-WQWH5YG7SK"
+};
+
+// =======================================
+// 2. FIREBASE CONNECTION
+// =======================================
+
+let db;
+let latestData = null;
+let historyData = [];
+let liveChart, tempChart, humidityChart;
+
+try {
+  if (firebaseConfig.apiKey === "ISI_API_KEY" ||
+      !firebaseConfig.databaseURL) {
+    throw new Error("Konfigurasi Firebase belum diisi.");
+  }
+
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+
+  document.getElementById("dbStatus").innerText =
+    "Menghubungkan...";
+
+  // Status koneksi Firebase
+  db.ref(".info/connected").on("value", snapshot => {
+    const online = snapshot.val() === true;
+
+    const badge = document.getElementById("connection");
+
+    badge.innerText = online
+      ? "● Firebase Terhubung"
+      : "● Firebase Terputus";
+
+    badge.classList.toggle("offline", !online);
+
+    document.getElementById("dbStatus").innerText =
+      online ? "Terhubung" : "Terputus";
+  });
+
+  // Data terbaru
+  db.ref("SmartGarden/SensorTerbaru")
+    .on("value", snapshot => {
+      latestData = snapshot.val();
+      updateDashboard(latestData);
+    }, handleError);
+
+  // Historis maksimal 500 catatan
+  db.ref("SmartGarden/Riwayat")
+    .limitToLast(500)
+    .on("value", snapshot => {
+      historyData = [];
+
+      snapshot.forEach(child => {
+        const item = child.val();
+
+        if (item) {
+          historyData.push({
+            id: child.key,
+            ...item
+          });
+        }
+      });
+
+      historyData.sort((a,b) => getTime(a)-getTime(b));
+
+      renderHistory();
+      updateAnalysis();
+    }, handleError);
+
+} catch(error) {
+  handleError(error);
+}
+
+// =======================================
+// 3. ERROR
+// =======================================
+
+function handleError(error) {
+  console.error(error);
+
+  document.getElementById("dbStatus").innerText =
+    "Error: " + error.message;
+
+  document.getElementById("connection").innerText =
+    "● Periksa konfigurasi";
+
+  document.getElementById("connection")
+    .classList.add("offline");
+}
+
+// =======================================
+// 4. DASHBOARD
+// =======================================
+
+function validNumber(value) {
+  return value !== null &&
+         value !== undefined &&
+         value !== "" &&
+         Number.isFinite(Number(value));
+}
+
+function applyStatusBadge(el, statusText) {
+  el.classList.remove("dry", "error");
+  const upper = String(statusText || "").toUpperCase();
+  if (upper.includes("KERING") || upper.includes("PANAS")) {
+    el.classList.add("dry");
+  } else if (upper.includes("ERROR")) {
+    el.classList.add("error");
+  }
+}
+
+function updateDashboard(data) {
+  if (!data) return;
+
+  const temp = validNumber(data.Suhu)
+    ? Number(data.Suhu) : null;
+
+  const humidity = validNumber(data.Kelembapan)
+    ? Number(data.Kelembapan) : null;
+
+  document.getElementById("temp").innerText =
+    temp === null ? "--" : temp.toFixed(1);
+
+  document.getElementById("humidity").innerText =
+    humidity === null ? "--" : humidity.toFixed(1);
+
+  const soilEl = document.getElementById("soil");
+  const soilText = data.StatusTanah ?? "--";
+  soilEl.innerText = soilText;
+  applyStatusBadge(soilEl, soilText);
+
+  document.getElementById("pump").innerText =
+    data.Pompa ?? "--";
+
+  document.getElementById("lastUpdate").innerText =
+    formatTime(data.Waktu);
+
+  const plantEl = document.getElementById("plantStatus");
+  const plantText = data.StatusTanah
+    ? "Kondisi tanah: " + data.StatusTanah
+    : "Menunggu data sensor";
+  plantEl.innerText = plantText;
+  applyStatusBadge(plantEl, data.StatusTanah ? data.StatusTanah : "");
+
+  if (temp !== null && humidity !== null) {
+    addLivePoint(temp, humidity);
+  }
+}
+
+// =======================================
+// 5. LIVE CHART
+// =======================================
+
+function createChart(id,label,color) {
+  return new Chart(document.getElementById(id), {
+    type:"line",
+    data:{
+      labels:[],
+      datasets:[{
+        label,
+        data:[],
+        borderColor:color,
+        backgroundColor:color + "22",
+        fill:true,
+        tension:0.35,
+        pointRadius:2
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+      scales:{
+        y:{beginAtZero:false}
+      }
+    }
+  });
+}
+
+liveChart = new Chart(
+  document.getElementById("liveChart"), {
+    type:"line",
+    data:{
+      labels:[],
+      datasets:[
+        {
+          label:"Suhu (°C)",
+          data:[],
+          borderColor:"#e6a43b",
+          tension:.3
+        },
+        {
+          label:"Kelembapan (%)",
+          data:[],
+          borderColor:"#2498c7",
+          tension:.3
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false
+    }
+  }
+);
+
+function addLivePoint(temp,humidity) {
+  const label = new Date().toLocaleTimeString("id-ID");
+
+  liveChart.data.labels.push(label);
+  liveChart.data.datasets[0].data.push(temp);
+  liveChart.data.datasets[1].data.push(humidity);
+
+  if (liveChart.data.labels.length > 30) {
+    liveChart.data.labels.shift();
+    liveChart.data.datasets.forEach(ds => ds.data.shift());
+  }
+
+  liveChart.update();
+}
+
+// =======================================
+// 6. HISTORY
+// =======================================
+
+function getTime(item) {
+  const value = item.Waktu;
+
+  if (validNumber(value)) {
+    return Number(value);
+  }
+
+  const parsed = Date.parse(value);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatTime(value) {
+  if (value === undefined || value === null) {
+    return "Tidak tersedia";
+  }
+
+  const date = validNumber(value)
+    ? new Date(Number(value))
+    : new Date(value);
+
+  if (isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("id-ID");
+}
+
+function renderHistory() {
+  const search = document.getElementById("search")
+    .value.toLowerCase();
+
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  const pump = document.getElementById("filterPump").value;
+
+  const filtered = historyData.filter(item => {
+    const date = new Date(getTime(item));
+
+    if (getTime(item) === 0) return false;
+
+    const dateText =
+      date.getFullYear() + "-" +
+      String(date.getMonth()+1).padStart(2,"0") + "-" +
+      String(date.getDate()).padStart(2,"0");
+
+    const matchesSearch =
+      [item.StatusTanah,item.Pompa]
+        .some(v => String(v ?? "").toLowerCase().includes(search));
+
+    const matchesStart = !start || dateText >= start;
+    const matchesEnd = !end || dateText <= end;
+    const matchesPump = !pump ||
+      String(item.Pompa).toUpperCase() === pump;
+
+    return matchesSearch && matchesStart &&
+           matchesEnd && matchesPump;
+  });
+
+  const table = document.getElementById("historyTable");
+
+  if (!filtered.length) {
+    table.innerHTML =
+      '<tr><td colspan="6" class="empty">Tidak ada data ditemukan.</td></tr>';
+    return;
+  }
+
+  table.innerHTML = filtered.slice().reverse().map((item,index) => `
+    <tr>
+      <td>${index+1}</td>
+      <td>${formatTime(item.Waktu)}</td>
+      <td>${validNumber(item.Suhu) ? Number(item.Suhu).toFixed(1)+" °C" : "--"}</td>
+      <td>${validNumber(item.Kelembapan) ? Number(item.Kelembapan)+" %" : "--"}</td>
+      <td>${safeText(item.StatusTanah)}</td>
+      <td>${safeText(item.Pompa)}</td>
+    </tr>
+  `).join("");
+}
+
+function safeText(value) {
+  const element = document.createElement("span");
+  element.textContent = String(value ?? "--");
+  return element.innerHTML;
+}
+
+function resetFilters() {
+  document.getElementById("search").value = "";
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+  document.getElementById("filterPump").value = "";
+
+  renderHistory();
+}
+
+// =======================================
+// 7. ANALYSIS
+// =======================================
+
+function updateAnalysis() {
+  const temps = historyData
+    .filter(d => validNumber(d.Suhu))
+    .map(d => Number(d.Suhu));
+
+  const humidities = historyData
+    .filter(d => validNumber(d.Kelembapan))
+    .map(d => Number(d.Kelembapan));
+
+  const avg = arr => arr.length
+    ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1)
+    : "--";
+
+  document.getElementById("avgTemp").innerText = avg(temps);
+  document.getElementById("avgHumidity").innerText = avg(humidities);
+  document.getElementById("totalData").innerText = historyData.length;
+
+  document.getElementById("pumpCount").innerText =
+    historyData.filter(d =>
+      String(d.Pompa).toUpperCase() === "ON"
+    ).length;
+
+  const recent = historyData.slice(-50);
+
+  const labels = recent.map(d =>
+    new Date(getTime(d)).toLocaleTimeString("id-ID")
+  );
+
+  if (!tempChart) {
+    tempChart = createChart("tempChart","Suhu (°C)","#e6a43b");
+  }
+  if (!humidityChart) {
+    humidityChart = createChart("humidityChart","Kelembapan (%)","#2498c7");
+  }
+
+  tempChart.data.labels = labels;
+  tempChart.data.datasets[0].data =
+    recent.map(d => validNumber(d.Suhu) ? Number(d.Suhu) : null);
+  tempChart.update();
+
+  humidityChart.data.labels = labels;
+  humidityChart.data.datasets[0].data =
+    recent.map(d => validNumber(d.Kelembapan) ? Number(d.Kelembapan) : null);
+  humidityChart.update();
+}
+
+// =======================================
+// 8. EXPORT CSV
+// =======================================
+
+function exportCSV() {
+  const search = document.getElementById("search")
+    .value.toLowerCase();
+
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  const pump = document.getElementById("filterPump").value;
+
+  const filtered = historyData.filter(item => {
+    const date = new Date(getTime(item));
+    const dateText = isNaN(date.getTime()) ? "" :
+      date.getFullYear() + "-" +
+      String(date.getMonth()+1).padStart(2,"0") + "-" +
+      String(date.getDate()).padStart(2,"0");
+
+    const matchesSearch =
+      [item.StatusTanah,item.Pompa]
+        .some(v => String(v ?? "").toLowerCase().includes(search));
+
+    return matchesSearch &&
+      (!start || dateText >= start) &&
+      (!end || dateText <= end) &&
+      (!pump || String(item.Pompa).toUpperCase() === pump);
+  });
+
+  const rows = [
+    ["Waktu","Suhu","Kelembapan","StatusTanah","Pompa"],
+    ...filtered.map(d => [
+      formatTime(d.Waktu),
+      d.Suhu ?? "",
+      d.Kelembapan ?? "",
+      d.StatusTanah ?? "",
+      d.Pompa ?? ""
+    ])
+  ];
+
+  const csv = "\uFEFF" + rows.map(row =>
+    row.map(v => '"' + String(v).replace(/"/g,'""') + '"')
+      .join(",")
+  ).join("\r\n");
+
+  const blob = new Blob([csv], {
+    type:"text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "SmartGarden_Historis.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// =======================================
+// 9. NAVIGATION
+// =======================================
+
+function showPage(page,button) {
+  document.querySelectorAll(".page")
+    .forEach(p => p.classList.remove("active"));
+
+  document.getElementById(page)
+    .classList.add("active");
+
+  document.querySelectorAll(".menu")
+    .forEach(m => m.classList.remove("active"));
+
+  button.classList.add("active");
+
+  const titles = {
+    dashboard:"Dashboard Monitoring",
+    history:"Historis Sensor",
+    analysis:"Analisis Data",
+    guide:"Panduan Penggunaan",
+    about:"Tentang Sistem"
+  };
+
+  document.getElementById("pageTitle").innerText =
+    titles[page];
+
+  if (page === "analysis") updateAnalysis();
+}
+
+</script>
+
+</body>
+</html>
